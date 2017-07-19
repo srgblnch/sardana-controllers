@@ -34,41 +34,49 @@
 
 import PyTango
 from PmacCtrl import PmacController
-from pool import MotorController
+#from sardana.pool.controller import MotorController
 
 class PmacLTPController(PmacController):
-    """This class is the Tango Sardana motor controller for the Pmac motor controller device in LTP."""
+    """This class is the Tango Sardana motor controller for the Pmac motor
+    controller device in LTP."""
     
     ctrl_extra_attributes = dict(PmacController.ctrl_extra_attributes)
-    ctrl_extra_attributes['FeedbackMode'] = {'Type':'PyTango.DevLong','R/W Type':'PyTango.READ_WRITE'}
+    ctrl_extra_attributes['FeedbackMode'] = {'Type':'PyTango.DevLong',
+                                             'R/W Type':'PyTango.READ_WRITE'}
 
-    def __init__(self,inst,props):
-        PmacController.__init__(self,inst,props)
+    def __init__(self,inst,props, *args, **kwargs):
+        PmacController.__init__(self,inst,props, *args, **kwargs)
         self._superklass = PmacController
 
     def StateOne(self, axis):
-	#self._log.info("StateOne 1")
+        # self._log.info("StateOne 1")
         state = PyTango.DevState.ON
         switchstate = 0
         status = "No limits are active, motor is in position"
-        if not bool(int(self.pmacEth.command_inout("GetMVariable",(int("%d40" % axis))))):
-               #self._log.info("StateOne 2")
-               state = PyTango.DevState.MOVING
-               status = '\nThe motor is moving'
-        if bool(int(self.pmacEth.command_inout("GetMVariable",(int("%d21" % axis))))):
-               #self._log.info("StateOne 3")
-               state = PyTango.DevState.ALARM
-               status = '\nAt least one of the negative/positive limit is activated'
-               switchstate += 2
-        if bool(int(self.pmacEth.command_inout("GetMVariable",(int("%d22" % axis))))):
-               #self._log.info("StateOne 4")
-               state = PyTango.DevState.ALARM
-               status = '\nAt least one of the negative/positive limit is activated'
-               switchstate += 4
-        if not bool(int(self.pmacEth.command_inout("GetMVariable",(int("%d39" % axis))))):
-               #self._log.info("StateOne 5")
-               state = PyTango.DevState.ALARM
-               status = '''\nMotor's amplifier is not enabled'''
+        if not bool(int(self.pmacEth.command_inout("GetMVariable",
+                                                   (int("%d40" % axis))))):
+            # self._log.info("StateOne 2")
+            state = PyTango.DevState.MOVING
+            status = '\nThe motor is moving'
+        if bool(int(self.pmacEth.command_inout("GetMVariable",
+                                               (int("%d21" % axis))))):
+            # self._log.info("StateOne 3")
+            state = PyTango.DevState.ALARM
+            status = '\nAt least one of the negative/positive limit is '\
+                'activated'
+            switchstate += 2
+        if bool(int(self.pmacEth.command_inout("GetMVariable",
+                                               (int("%d22" % axis))))):
+            # self._log.info("StateOne 4")
+            state = PyTango.DevState.ALARM
+            status = '\nAt least one of the negative/positive limit is '\
+                'activated'
+            switchstate += 4
+        if not bool(int(self.pmacEth.command_inout("GetMVariable",
+                                                   (int("%d39" % axis))))):
+            # self._log.info("StateOne 5")
+            state = PyTango.DevState.ALARM
+            status = '''\nMotor's amplifier is not enabled'''
         #self._log.info("StateOne 6")
         return (state, status, switchstate)
 
@@ -84,27 +92,44 @@ class PmacLTPController(PmacController):
         name = name.lower()
         if name == "feedbackmode":
             if axis == 1:
-                i103value = self.pmacEth.command_inout("GetIVariable", int("%d03" % axis))
+                i103value = self.pmacEth.command_inout("GetIVariable",
+                                                       int("%d03" % axis))
                 try:
                     if int(i103value) == 13569:
                         return 1
                     elif int(i103value) == 13571:
                         return 2
                     else:
-                        self._log.error("While getting feedback mode Pmac returned some inconsistent value, please report it to controls division.")
-			PyTango.Except.throw_exception("Value error",
-                                           "Pmac returned some inconsistent value, please report it to controls division.",
-                                           "PmacLTPCtrl.GetExtraAttribute()")
+                        self._log.error("While getting feedback mode Pmac "
+                                        "returned some inconsistent value, "
+                                        "please report it to controls "
+                                        "division.")
+                        PyTango.Except.throw_exception("Value error",
+                                                       "Pmac returned some "
+                                                       "inconsistent value, "
+                                                       "please report it to "
+                                                       "controls division.",
+                                                       "PmacLTPCtrl."
+                                                       "GetExtraAttribute()")
                 except ValueError:
-                    self._log.error("While gettinh feedback mode Pmac returned some inconsistent value, please report it to controls division.")
+                    self._log.error("While gettinh feedback mode Pmac "
+                                    "returned some inconsistent value, "
+                                    "please report it to controls division.")
                     PyTango.Except.throw_exception("Value error",
-                                           "Pmac returned some inconsistent value, please report it to controls division.",
-                                           "PmacLTPCtrl.GetExtraAttribute()")
+                                                   "Pmac returned some "
+                                                   "inconsistent value, "
+                                                   "please report it to "
+                                                   "controls division.",
+                                                   "PmacLTPCtrl."
+                                                   "GetExtraAttribute()")
             if axis == 2:
-                self._log.warning("Various feedback mode feature is reserved only for top axis.")
-		PyTango.Except.throw_exception("Value error",
-                                           "Axis nr 2 does not support various feedback mode.",
-                                           "PmacLTPCtrl.GetExtraAttribute()")
+                self._log.warning("Various feedback mode feature is reserved "
+                                  "only for top axis.")
+                PyTango.Except.throw_exception("Value error",
+                                               "Axis nr 2 does not support "
+                                               "various feedback mode.",
+                                               "PmacLTPCtrl."
+                                               "GetExtraAttribute()")
         else:
             return self._superklass.GetExtraAttributePar(self, axis, name)
 
@@ -118,20 +143,29 @@ class PmacLTPController(PmacController):
         if name == "feedbackmode":
             if axis == 1:
                 if value == 1:
-                    self.pmacEth.command_inout("SetIVariable",[int("%d03" % axis), 13569])
+                    self.pmacEth.command_inout("SetIVariable",
+                                               [int("%d03" % axis), 13569])
                 elif value == 2:
-                    self.pmacEth.command_inout("SetIVariable",[int("%d03" % axis), 13571])
+                    self.pmacEth.command_inout("SetIVariable",
+                                               [int("%d03" % axis), 13571])
                 else:
-                    self._log.warning("Feedback supports only two modes: use 1 for single feedback mode or 2 for dual feedback mode.")
+                    self._log.warning("Feedback supports only two modes: "
+                                      "use 1 for single feedback mode or 2 "
+                                      "for dual feedback mode.")
                     PyTango.Except.throw_exception("Value error",
-                                           "Wrong value, use 1 for single feedback mode or 2 for dual feedback mode.",
-                                           "PmacLTPCtrl.SetExtraAttribute()")
+                                                   "Wrong value, use 1 for "
+                                                   "single feedback mode or 2 "
+                                                   "for dual feedback mode.",
+                                                   "PmacLTPCtrl."
+                                                   "SetExtraAttribute()")
             else:
-                self._log.warning("Various feedback mode feature is reserved only for top axis.")
+                self._log.warning("Various feedback mode feature is reserved "
+                                  "only for top axis.")
                 PyTango.Except.throw_exception("Value error",
-                                           "Axis nr 2 does not support various feedback mode.",
-                                           "PmacLTPCtrl.SetExtraAttribute()")
-
+                                               "Axis nr 2 does not support "
+                                               "various feedback mode.",
+                                               "PmacLTPCtrl."
+                                               "SetExtraAttribute()")
                 return
         else:
             self._superklass.SetExtraAttributePar(self, axis, name, value)

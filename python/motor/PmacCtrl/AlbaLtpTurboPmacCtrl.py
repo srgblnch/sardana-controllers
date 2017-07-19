@@ -39,7 +39,8 @@ from sardana.pool import PoolUtil
 from sardana.pool.controller import MotorController
 
 class LtpTurboPmacController(TurboPmacController):
-    """This class is the Tango Sardana motor controller for the Turbo Pmac motor controller device in LTP."""
+    """This class is the Tango Sardana motor controller for the Turbo Pmac
+    motor controller device in LTP."""
     
     MaxDevice = 2
 
@@ -65,15 +66,24 @@ class LtpTurboPmacController(TurboPmacController):
                 elif mode == "$3503":
                     return 2
                 else:
-                    self._log.error("While getting feedback mode TurboPmac returned some inconsistent value, please report it to controls division.")
+                    self._log.error("While getting feedback mode TurboPmac "
+                                    "returned some inconsistent value, please "
+                                    "report it to controls division.")
                     PyTango.Except.throw_exception("Value error",
-                                                   "TurboPmac returned some inconsistent value, please report it to controls division.",
-                                                   "LtpTurboPmacController.GetExtraAttribute()")
+                                                   "TurboPmac returned some "
+                                                   "inconsistent value, "
+                                                   "please report it to "
+                                                   "controls division.",
+                                                   "LtpTurboPmacController."
+                                                   "GetExtraAttribute()")
             if axis == 2:
-                self._log.warning("Various feedback mode feature is reserved only for top axis.")
+                self._log.warning("Various feedback mode feature is reserved "
+                                  "only for top axis.")
                 PyTango.Except.throw_exception("Value error",
-                                           "Axis nr 2 does not support various feedback mode.",
-                                           "LtpTurboPmacController.GetExtraAttribute()")
+                                               "Axis nr 2 does not support "
+                                               "various feedback mode.",
+                                               "LtpTurboPmacController."
+                                               "GetExtraAttribute()")
         else:
             return self.superklass.GetExtraAttributePar(self, axis, name)
 
@@ -86,20 +96,27 @@ class LtpTurboPmacController(TurboPmacController):
         if name == "FeedbackMode":
             if axis == 1:
                 if value == 1:
-                    self.pmacEth.command_inout("OnlineCmd","I103=$3501")
+                    self.pmacEth.command_inout("OnlineCmd", "I103=$3501")
                 elif value == 2:
                     self.pmacEth.command_inout("OnlineCmd","I103=$3503")
                 else:
-                    self._log.warning("Feedback supports only two modes: use 1 for single feedback mode or 2 for dual feedback mode.")
+                    self._log.warning("Feedback supports only two modes: "
+                                      "use 1 for single feedback mode or 2 "
+                                      "for dual feedback mode.")
                     PyTango.Except.throw_exception("Value error",
-                                           "Wrong value, use 1 for single feedback mode or 2 for dual feedback mode.",
-                                           "PmacLTPCtrl.SetExtraAttribute()")
+                                                   "Wrong value, use 1 for "
+                                                   "single feedback mode or "
+                                                   "2 for dual feedback mode.",
+                                                   "PmacLTPCtrl."
+                                                   "SetExtraAttribute()")
             else:
-                self._log.warning("Various feedback mode feature is reserved only for top axis.")
+                self._log.warning("Various feedback mode feature is reserved "
+                                  "only for top axis.")
                 PyTango.Except.throw_exception("Value error",
-                                           "Axis nr 2 does not support various feedback mode.",
-                                           "PmacLTPCtrl.SetExtraAttribute()")
-
+                                               "Axis nr 2 does not support "
+                                               "various feedback mode.",
+                                               "PmacLTPCtrl."
+                                               "SetExtraAttribute()")
                 return
         else:
             self.superklass.SetExtraAttributePar(self, axis, name, value)
