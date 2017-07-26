@@ -77,8 +77,8 @@ class LtpTurboPmacController(TurboPmacController):
                                                    "LtpTurboPmacController."
                                                    "GetExtraAttribute()")
             if axis == 2:
-                self._log.warning("Various feedback mode feature is reserved "
-                                  "only for top axis.")
+                # self._log.warning("Various feedback mode feature is reserved "
+                #                   "only for top axis.")
                 PyTango.Except.throw_exception("Value error",
                                                "Axis nr 2 does not support "
                                                "various feedback mode.",
@@ -110,8 +110,8 @@ class LtpTurboPmacController(TurboPmacController):
                                                    "PmacLTPCtrl."
                                                    "SetExtraAttribute()")
             else:
-                self._log.warning("Various feedback mode feature is reserved "
-                                  "only for top axis.")
+                # self._log.warning("Various feedback mode feature is reserved "
+                #                   "only for top axis.")
                 PyTango.Except.throw_exception("Value error",
                                                "Axis nr 2 does not support "
                                                "various feedback mode.",
@@ -120,3 +120,46 @@ class LtpTurboPmacController(TurboPmacController):
                 return
         else:
             self.superklass.SetExtraAttributePar(self, axis, name, value)
+
+    def StateOne(self, axis):
+        state, status, switchstate = super(LtpTurboPmacController,
+                                           self).StateOne(axis)
+        general, top, bottom = self.__airState()
+        if general:
+            if state is not PyTango.DevState.ALARM:
+                state = PyTango.DevState.ALARM
+                status = "Motor is in ALARM state."
+            status += "\nThe air supply is NOT OK"
+            if (axis == 1 and top) or (axis == 2 and bottom):
+                status += "\nSome air pads are not lifted."
+            # self._log.warning("ALARM because AIR PRESSURE")
+            return (state, status, switchstate)
+
+        if state is PyTango.DevState.ALARM:
+            # check why and if it should be inhibited
+            negLimit = bool(switchstate & 0x4)
+            posLimit = bool(switchstate & 0x2)
+            inPosition = self.attributes[axis]["InPosition"]
+            # TODO: check motion direction
+            if not inPosition:
+                if negLimit:
+                    self._log.warning("ALARM state because of the negative "
+                                      "limit switch but moving: inhibiting")
+                    state = PyTango.DevState.MOVING
+                elif posLimit:
+                    self._log.warning("ALARM state because of the positive "
+                                      "limit switch but moving: inhibiting")
+                    state = PyTango.DevState.MOVING
+                # else:
+                #     self._log.info("%s and no limit to inhibit alarmn" % (state))
+            # else:
+            #     self._log.debug("%s with limits (%s,%s) in position %s"
+            #                      % (state, negLimit, posLimit, inPosition))
+        return (state, status, switchstate)
+
+    def __airState(self):
+        value = int(self.pmacEth.command_inout("getmvariable",100))
+        general = not bool(value & 1)
+        top = bool(value & (8+63))
+        bottom = bool(value & (14+3))
+        return general, top, bottom
